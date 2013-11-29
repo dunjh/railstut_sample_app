@@ -105,6 +105,9 @@ describe "Authentication" do
 	  		before { delete user_path(user) }
 	  		specify { expect(response).to redirect_to(root_path) }
 	  	end
+
+	  	describe "send PATCH request to Users#update action directly" do
+	  		before { patch user_path(user, admin: true)}
 	  end
 	end
 end
