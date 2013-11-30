@@ -55,6 +55,18 @@ describe "Authentication" do
 	  			it "should render the desired protected page" do
 	  				expect(page).to have_title('Edit user')
 	  			end
+
+	  			describe "after another login will show default page" do
+	  				before do
+	  				 # click_link ('Sign out')    #this works as well
+	  				 delete signout_path
+	  				 sign_in(user)
+	  				end
+	  				
+	  				it "should render the default (profile) page" do
+	  					expect(page).to have_title(user.name)
+	  				end
+	  			end
 	  		end
 	  	end
 
@@ -75,6 +87,12 @@ describe "Authentication" do
 	  			before { visit users_path }
 	  			it { should have_title('Sign in') }
 	  		end
+	  	end
+
+	  	describe "non-signed user cannot see some links" do
+	  		before { visit root_path }
+	  		it { should_not have_link('Profile') }
+	  		it { should_not have_link('Settings') }
 	  	end
 	  end
 
@@ -105,9 +123,29 @@ describe "Authentication" do
 	  		before { delete user_path(user) }
 	  		specify { expect(response).to redirect_to(root_path) }
 	  	end
+	  end
 
-	  	describe "send PATCH request to Users#update action directly" do
-	  		before { patch user_path(user, admin: true)}
+	  describe "as a signed user should not create new user any more" do
+	  	let(:user) { FactoryGirl.create(:user) }
+
+	  	before { sign_in user, no_capybara: true }
+
+	  	describe "cannot see new user creation page" do
+	  		before { visit signup_path }
+	  		it {should have_title 'Ruby on Rails Tutorial Sample App' }
+	  	end
+
+	  	describe "cannot post create request to create new user" do
+				let(:params) do
+				 	{ user: {name: 'test_user1',
+									email: 'test_mail@test.com',
+									password: 'foobar',
+									password_confirmation: 'foobar'} }
+				end
+	  		before { post users_path, params }
+				
+				specify { expect(response).to redirect_to(root_path) }
+	  	end
 	  end
 	end
 end

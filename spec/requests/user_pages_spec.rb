@@ -48,7 +48,28 @@ describe "UserPages" do
         end
         it { should_not have_link('delete', href: user_path(admin)) }
       end
+      
+      describe "admin user should not be able to delete him/herself" do
+        let(:admin) { FactoryGirl.create(:admin) }
+        before do
+          sign_in admin, no_capybara: true
+        end
+        it "should not be able to delete admin user him/herself" do
+          expect { delete user_path(admin) }.to_not change(User, :count)
+        end
+      end
+      describe "When admin user delete him/herself, should return to root path" do
+        let(:admin) { FactoryGirl.create(:admin) }
+        before do
+          sign_in admin, no_capybara: true
+          delete user_path(admin)
+        end        
+        specify { expect(response).to redirect_to(root_url) }
+        # specify { expect(response).to match('Cannot delete yourself as admin') } #don't know how to check flash message in response at this moment
+      end
     end
+
+    
 
     it "should list each user" do
       User.all.each do |user|
@@ -82,7 +103,7 @@ describe "UserPages" do
         fill_in "Name", with: "Example User"
         fill_in "Email",with: "user@example.com"
         fill_in "Password",with: "foobar"
-        fill_in "Confirmation", with: "foobar"
+        fill_in "Confirm Password", with: "foobar"
       end
       it "should create a user" do
         expect { click_button submit }.to change(User, :count).by(1)
@@ -116,6 +137,18 @@ describe "UserPages" do
       it { should have_content("Update your profile") }
       it { should have_title("Edit user") }
       it { should have_link('change', href: 'http://gravatar.com/emails') }
+      describe "forbidden attributes" do
+        let(:user) { FactoryGirl.create(:user) }
+        let(:params) do
+          { user: {admin: true, password: user.password,
+                    password_confirmation: user.password} }
+        end
+        before do
+          sign_in user, no_capybara: true
+          patch user_path(user), params
+        end
+        specify { expect(user.reload).not_to be_admin }
+      end
     end
 
     describe "with invalid information" do
